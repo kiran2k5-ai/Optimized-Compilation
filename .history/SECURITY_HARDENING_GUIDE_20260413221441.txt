@@ -1,0 +1,223 @@
+CODERUNNER SECURITY HARDENING GUIDE
+====================================
+
+Current Status: VULNERABLE (Development environment)
+Goal: HARDENED (Production-ready)
+
+=== 1. FIX FILE PERMISSIONS [HIGH PRIORITY] ===
+
+Files are currently world-writable (0666). Change to:
+- config.php: 0600 (read/write owner only)
+- public/jobe/index.php: 0644 (read for all, write owner only)
+- public/config.php: 0600 (read/write owner only)
+
+Command (Run in PowerShell as Administrator):
+---
+cd "E:\moodel_xampp\htdocs\moodle"
+
+# Fix config.php
+icacls "config.php" /inheritance:r /grant:r "%USERNAME%:F" /grant "SYSTEM:(F)"
+
+# Fix jobe directory
+icacls "public\jobe\index.php" /inheritance:r /grant:r "%USERNAME%:F" /grant "SYSTEM:(F)"
+icacls "public\config.php" /inheritance:r /grant:r "%USERNAME%:F" /grant "SYSTEM:(F)"
+---
+
+=== 2. SET STRONG DATABASE PASSWORD [HIGH PRIORITY] ===
+
+Change from: $CFG->dbpass = '';
+Change to:   $CFG->dbpass = 'SecureP@ssw0rd123!';
+
+Edit: config.php
+1. Open config.php
+2. Change empty password to strong password (16+ chars)
+3. Run this SQL to set password:
+
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'SecureP@ssw0rd123!';
+FLUSH PRIVILEGES;
+
+4. Update config.php with new password
+
+=== 3. ENABLE HTTPS/SSL [HIGH PRIORITY] ===
+
+In Apache XAMPP:
+1. Edit httpd-ssl.conf (Apache config)
+2. Enable mod_ssl
+3. Generate self-signed certificate:
+
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout server.key -out server.crt
+
+4. Update config.php:
+   Change: $CFG->wwwroot = 'http://localhost';
+   Change to: $CFG->wwwroot = 'https://localhost';
+
+5. Force HTTPS in Moodle:
+   Add to config.php: $CFG->sslproxy = true;
+
+=== 4. ADD API KEY AUTHENTICATION [CRITICAL] ===
+
+Current Jobe API has NO authentication!
+
+Solution: Use index_secure.php with API key:
+
+1. Rename current: public/jobe/index.php → public/jobe/index_old.php
+2. Rename secure version: public/jobe/index_secure.php → public/jobe/index.php
+3. Generate secure API key:
+   - Open PHP console
+   - Run: echo bin2hex(random_bytes(16));
+   - Use output as API key
+
+4. Update config.php:
+   $CFG->jobe_api_key = 'your_generated_key_here';
+
+5. All requests must include:
+   Header: Authorization: Bearer <api_key>
+   OR: http://localhost/jobe?api_key=<api_key>
+
+=== 5. RESTRICT IP ACCESS [MEDIUM PRIORITY] ===
+
+Only allow localhost to access Jobe API.
+
+In public/jobe/index.php (or index_secure.php):
+const ALLOWED_IPS = ['127.0.0.1', '::1']; // IPv4 and IPv6 localhost
+
+This prevents external systems from calling your Jobe API.
+
+=== 6. FIX CORS SETTINGS [MEDIUM PRIORITY] ===
+
+Change from:
+    header('Access-Control-Allow-Origin: *');
+
+Change to:
+    header('Access-Control-Allow-Origin: http://localhost');
+
+This prevents other websites from calling your API.
+
+=== 7. ADD RESOURCE LIMITS [MEDIUM PRIORITY] ===
+
+Prevent DoS attacks with infinite loops:
+
+In Jobe API, add timeout to execution:
+    $cmd = "timeout 5 python \"$codefile\"";
+
+This limits execution to 5 seconds maximum.
+
+=== 8. ADD LOGGING & AUDIT TRAIL [MEDIUM PRIORITY] ===
+
+Create execution log to track all code runs:
+
+Log file: E:\moodel_xampp\moodledata\jobe_execution.log
+
+Each execution logs:
+- Timestamp
+- User IP
+- Language used
+- Code size
+- Exit code
+- Any errors
+
+Review log regularly for suspicious activity.
+
+=== 9. DISABLE DANGEROUS PHP FUNCTIONS [HIGH PRIORITY] ===
+
+Edit php.ini (E:\moodel_xampp\php\php.ini):
+
+Find: disable_functions = 
+
+Change to:
+disable_functions = exec,system,passthru,shell_exec,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source
+
+This prevents dangerous commands from being executed via PHP.
+
+=== 10. VALIDATE INPUT LENGTHS [MEDIUM PRIORITY] ===
+
+Limit:
+- Source code: max 100KB
+- Input data: max 100KB
+- Output: max 50KB
+
+This prevents memory exhaustion attacks.
+
+=== 11. ADD RATE LIMITING [MEDIUM PRIORITY] ===
+
+Limit requests: max 10 submissions per minute per IP
+
+This prevents spam/brute force attacks.
+
+=== 12. REMOVE TEST FILES [MEDIUM PRIORITY] ===
+
+Delete developer/debug scripts (optional):
+- DELETE_QUESTION.php
+- VERIFY_TEMPLATE.php
+- FORCE_RE_RENDER.php
+- COMBINATOR_TEMPLATE.php
+etc.
+
+These are not needed in production!
+
+=== QUICK SECURITY CHECKLIST ===
+
+Before going to production:
+
+□ Fix file permissions (0600/0644)
+□ Set strong database password
+□ Enable HTTPS/SSL
+□ Add API key authentication
+□ Restrict CORS to localhost only
+□ Add IP whitelisting (127.0.0.1 only)
+□ Add execution timeouts
+□ Add logging/audit trail
+□ Disable dangerous PHP functions
+□ Validate input lengths
+□ Enable rate limiting
+□ Remove debug/test files
+□ Test everything works
+□ Document security settings
+□ Regular backup policy
+□ Monitor audit logs
+
+=== TESTING YOUR SECURITY ===
+
+1. Try accessing Jobe API without API key:
+   curl http://localhost/jobe/index.php/restapi/languages
+   → Should return 401 Unauthorized
+
+2. Try accessing with wrong API key:
+   curl -H "Authorization: Bearer wrong_key" http://localhost/jobe/index.php/restapi/languages
+   → Should return 401 Unauthorized
+
+3. Try accessing with correct API key:
+   curl -H "Authorization: Bearer moodle_local_api_key_12345" http://localhost/jobe/index.php/restapi/languages
+   → Should return list of languages
+
+4. Test rate limiting:
+   Send 11 requests in 60 seconds
+   → Request 11 should return 429 Too Many Requests
+
+5. Check execution timeout:
+   Submit code with infinite loop
+   → Should timeout after 5 seconds
+
+6. View audit log:
+   cat E:\moodel_xampp\moodledata\jobe_execution.log
+   → Should see all execution attempts logged
+
+=== REFERENCES ===
+
+- OWASP Top 10: https://owasp.org/www-project-top-ten/
+- PHP Security: https://www.php.net/manual/en/security.php
+- Moodle Security: https://docs.moodle.org/en/Security
+- CodeRunner Security: https://github.com/trampgeek/moodle-qtype_coderunner/wiki/Security
+
+=== NEED HELP? ===
+
+For production deployment:
+1. Use real SSL certificate (not self-signed)
+2. Set strong database password
+3. Use dedicated API keys per integration
+4. Enable all security features
+5. Regular security audits
+6. Monitor execution logs daily
+7. Keep PHP and Moodle updated
+8. Regular backups

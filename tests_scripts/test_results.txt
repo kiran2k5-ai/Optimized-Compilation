@@ -1,0 +1,43 @@
+
+============================================
+  CODERUNNER + PYODIDE TEST RUNNER
+  (Standalone - Direct Database Connection)
+============================================
+
+✓ Connected to Moodle database
+
+Loading test suites...
+
+===========================================
+API TESTS
+===========================================
+
+Running: ajax_endpoints_test.php
+Running: jobe_api_mock_test.php
+Running: pyodide_api_test.php
+===========================================
+FUNCTION TESTS
+===========================================
+
+Running: database_test.php
+Running: enable_pyodide_test.php
+Running: execution_test.php
+Running: lib_integration_test.php
+===========================================
+INTEGRATION TESTS
+===========================================
+
+Running: attempt_handling_test.php
+Running: full_workflow_test.php
+Running: question_rendering_test.php
+
+============================================
+TEST SUMMARY
+============================================
+Total Passed: 0
+Total Failed: 0
+Pass Rate: 0%
+============================================
+
+✗ SOME TESTS FAILED
+

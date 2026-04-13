@@ -1,0 +1,1 @@
+"Log ID {$log->id}: {$log->module} - {$log->action} - {$log->info} at " . date('Y-m-d H:i:s', $log- . "\n";

@@ -1,0 +1,1 @@
+'Combinator: ' . (\$q20- ? 'YES' : 'NO') . '\n';

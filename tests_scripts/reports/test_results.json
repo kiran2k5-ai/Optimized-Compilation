@@ -1,0 +1,13 @@
+{
+    "api_tests": [],
+    "function_tests": [],
+    "integration_tests": [],
+    "summary": {
+        "total_tests": 10,
+        "passed": 5,
+        "failed": 5,
+        "warnings": 0,
+        "execution_time": 0.2,
+        "timestamp": "2026-04-09 06:59:48"
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "q1": {
+        "title": "Backtracking - N-Queens",
+        "description": "Solve the N-Queens problem",
+        "language": "python",
+        "marks": 10,
+        "tests": [
+            {
+                "input": "4",
+                "expected": "2"
+            },
+            {
+                "input": "1",
+                "expected": "1"
+            }
+        ]
+    },
+    "q2": {
+        "title": "Dynamic Programming - Fibonacci",
+        "description": "Solve nth Fibonacci using DP",
+        "language": "python",
+        "marks": 10,
+        "tests": [
+            {
+                "input": "5",
+                "expected": "5"
+            },
+            {
+                "input": "7",
+                "expected": "13"
+            }
+        ]
+    },
+    "q3": {
+        "title": "Tree - Binary Tree Height",
+        "description": "Calculate height of binary tree",
+        "language": "python",
+        "marks": 10,
+        "tests": [
+            {
+                "input": "1 2 3",
+                "expected": "2"
+            },
+            {
+                "input": "5",
+                "expected": "0"
+            }
+        ]
+    }
+}

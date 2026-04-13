@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pyodide Python Sandbox - Secure Code Execution</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .question-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .question-box h3 {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .question-box p {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-run {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-run:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-run:active {
+            transform: translateY(0);
+        }
+        
+        .btn-clear {
+            background: #f0f0f0;
+            color: #333;
+            flex: 1;
+        }
+        
+        .btn-clear:hover {
+            background: #ddd;
+        }
+        
+        .output-box {
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 80px;
+            max-height: 300px;
+            overflow-y: auto;
+            color: #333;
+        }
+        
+        .output-box.success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+        
+        .output-box.error {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+        
+        .output-label {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .loading {
+            color: #667eea;
+            font-style: italic;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 3px;
+            color: #1565c0;
+        }
+        
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .status {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .status.ready {
+            color: #4caf50;
+        }
+        
+        .status.error-msg {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Secure Python Sandbox</h1>
+            <p>Code runs locally in your browser - 100% secure, no server needed</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <strong>✓ How it works:</strong>
+                Your Python code runs safely in a sandbox inside your browser. Nothing is sent to a server until you submit. Perfect for 5000+ students!
+            </div>
+            
+            <!-- Question 1 -->
+            <div class="section">
+                <h2>Question 1: Multiply Two Numbers</h2>
+                
+                <div class="question-box">
+                    <h3>Problem:</h3>
+                    <p>Write a Python program that reads two numbers and prints their product.</p>
+                    <p><strong>Example:</strong> If input is 5 and 10, output should be 50</p>
+                </div>
+                
+                <div>
+                    <label for="code1" class="output-label">Your Code:</label>
+                    <textarea id="code1" placeholder="Write your Python code here...
+Example:
+a = int(input())
+b = int(input())
+print(a * b)"></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn-run" onclick="runCode1()">▶ Run Code</button>
+                    <button class="btn-clear" onclick="clearCode1()">Clear</button>
+                </div>
+                
+                <div>
+                    <div class="output-label">Output:</div>
+                    <div class="output-box" id="output1">Ready to run...</div>
+                </div>
+                
+                <div class="status" id="status1"></div>
+            </div>
+            
+            <!-- Question 2 -->
+            <div class="section">
+                <h2>Question 2: Print Hello Message</h2>
+                
+                <div class="question-box">
+                    <h3>Problem:</h3>
+                    <p>Write a Python program that reads a name and prints "Hello [name]!"</p>
+                    <p><strong>Example:</strong> If input is "Kiran", output should be "Hello Kiran!"</p>
+                </div>
+                
+                <div>
+                    <label for="code2" class="output-label">Your Code:</label>
+                    <textarea id="code2" placeholder="Write your Python code here...
+Example:
+name = input()
+print(f'Hello {name}!')"></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn-run" onclick="runCode2()">▶ Run Code</button>
+                    <button class="btn-clear" onclick="clearCode2()">Clear</button>
+                </div>
+                
+                <div>
+                    <div class="output-label">Output:</div>
+                    <div class="output-box" id="output2">Ready to run...</div>
+                </div>
+                
+                <div class="status" id="status2"></div>
+            </div>
+            
+            <!-- Question 3 -->
+            <div class="section">
+                <h2>Question 3: Sum of Numbers</h2>
+                
+                <div class="question-box">
+                    <h3>Problem:</h3>
+                    <p>Write a Python program that reads 3 numbers and prints their sum.</p>
+                    <p><strong>Example:</strong> If inputs are 10, 20, 30, output should be 60</p>
+                </div>
+                
+                <div>
+                    <label for="code3" class="output-label">Your Code:</label>
+                    <textarea id="code3" placeholder="Write your Python code here...
+Example:
+a = int(input())
+b = int(input())
+c = int(input())
+print(a + b + c)"></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn-run" onclick="runCode3()">▶ Run Code</button>
+                    <button class="btn-clear" onclick="clearCode3()">Clear</button>
+                </div>
+                
+                <div>
+                    <div class="output-label">Output:</div>
+                    <div class="output-box" id="output3">Ready to run...</div>
+                </div>
+                
+                <div class="status" id="status3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Pyodide from CDN -->
+    <script async src="https://cdn.jsdelivr.net/pyodide/v0.23.0/full/pyodide.js"></script>
+    
+    <script>
+        // Global Pyodide instance
+        let pyodide = null;
+        let pyodideReady = false;
+
+        // Initialize Pyodide
+        async function initPyodide() {
+            if (pyodideReady) return;
+            
+            try {
+                pyodide = await loadPyodide({
+                    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.0/full/'
+                });
+                pyodideReady = true;
+                console.log('✓ Pyodide initialized successfully');
+            } catch (error) {
+                console.error('Error initializing Pyodide:', error);
+                alert('Failed to load Python runtime. Please refresh the page.');
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', initPyodide);
+
+        // Run code function
+        async function runCode(questionNum) {
+            if (!pyodideReady) {
+                alert('Pyodide is still loading... Please wait a moment.');
+                return;
+            }
+
+            const codeId = 'code' + questionNum;
+            const outputId = 'output' + questionNum;
+            const statusId = 'status' + questionNum;
+            
+            const code = document.getElementById(codeId).value;
+            const outputBox = document.getElementById(outputId);
+            const statusBox = document.getElementById(statusId);
+
+            if (!code.trim()) {
+                outputBox.textContent = '⚠ Please enter some code first!';
+                outputBox.classList.remove('success', 'error');
+                return;
+            }
+
+            outputBox.textContent = '⏳ Running...';
+            outputBox.classList.remove('success', 'error');
+            statusBox.textContent = 'Executing...';
+            statusBox.classList.remove('ready', 'error-msg');
+
+            try {
+                // Create a custom input handler
+                const inputLines = [];
+                const pythonCode = `
+import sys
+from io import StringIO
+
+# Capture the original input function
+original_input = __builtins__.input
+captured_inputs = []
+
+def custom_input(prompt=""):
+    line = input(prompt)
+    captured_inputs.append(line)
+    return line
+
+# Replace input with our custom version
+__builtins__.input = custom_input
+
+# Redirect stdout to capture output
+old_stdout = sys.stdout
+sys.stdout = StringIO()
+
+try:
+    exec(${JSON.stringify(code)})
+finally:
+    output = sys.stdout.getvalue()
+    sys.stdout = old_stdout
+    print(output, end='')
+`;
+
+                // Run the code
+                pyodide.runPython(code);
+                
+                // Get the output
+                const output = pyodide.runPython(`
+import sys
+from io import StringIO
+
+# Capture output
+old_stdout = sys.stdout
+sys.stdout = StringIO()
+
+try:
+    exec(${JSON.stringify(code)})
+except Exception as e:
+    print(f'Error: {type(e).__name__}: {e}')
+finally:
+    output = sys.stdout.getvalue()
+    sys.stdout = old_stdout
+
+output
+`);
+
+                outputBox.textContent = output || '(No output)';
+                outputBox.classList.add('success');
+                outputBox.classList.remove('error');
+                statusBox.textContent = '✓ Code executed successfully';
+                statusBox.classList.add('ready');
+                statusBox.classList.remove('error-msg');
+
+            } catch (error) {
+                outputBox.textContent = `Error: ${error.message}`;
+                outputBox.classList.add('error');
+                outputBox.classList.remove('success');
+                statusBox.textContent = '✗ Error: ' + error.message;
+                statusBox.classList.add('error-msg');
+                statusBox.classList.remove('ready');
+            }
+        }
+
+        // Simplified run functions
+        function runCode1() { runCode(1); }
+        function runCode2() { runCode(2); }
+        function runCode3() { runCode(3); }
+        
+        function clearCode(num) {
+            document.getElementById('code' + num).value = '';
+            document.getElementById('output' + num).textContent = 'Ready to run...';
+            document.getElementById('output' + num).classList.remove('success', 'error');
+            document.getElementById('status' + num).textContent = '';
+        }
+        
+        function clearCode1() { clearCode(1); }
+        function clearCode2() { clearCode(2); }
+        function clearCode3() { clearCode(3); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pyodide CodeRunner Test Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .status {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-item.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-item.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-item.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .test-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .test-card h3 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .test-code {
+            background: #f5f5f5;
+            padding: 12px;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .test-button {
+            width: 100%;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .test-button:hover {
+            background: #5568d3;
+        }
+
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .test-result {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .test-result.show {
+            display: block;
+        }
+
+        .test-result.pass {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .test-result.fail {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .result-detail {
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .console {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .console-line {
+            margin: 5px 0;
+            word-break: break-all;
+        }
+
+        .console-time {
+            color: #808080;
+        }
+
+        .console-log {
+            color: #00ff00;
+        }
+
+        .console-error {
+            color: #ff6b6b;
+        }
+
+        .console-info {
+            color: #87ceeb;
+        }
+
+        .summary {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+
+        .summary h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .badge.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Pyodide CodeRunner Test Suite</h1>
+            <p>Testing Pyodide.js integration for CodeRunner Python execution</p>
+            <div class="status">
+                <div class="status-item loading" id="status-pyodide">
+                    ⏳ Pyodide: Loading...
+                </div>
+                <div class="status-item" id="status-tests">
+                    📋 Tests: Waiting...
+                </div>
+                <div class="status-item" id="status-summary">
+                    📊 Summary: Pending...
+                </div>
+            </div>
+        </div>
+
+        <div class="test-grid" id="test-grid">
+            <!-- Tests will be generated here -->
+        </div>
+
+        <div class="console" id="console">
+            <div class="console-line">
+                <span class="console-time">[00:00:00]</span>
+                <span class="console-info">Initializing Pyodide CodeRunner Test Suite...</span>
+            </div>
+        </div>
+
+        <div class="summary" id="summary">
+            <h2>Test Summary</h2>
+            <div class="summary-stats">
+                <div class="stat">
+                    <div class="stat-value" id="total-tests">0</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="passed-tests" style="color: #28a745;">0</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="failed-tests" style="color: #dc3545;">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="success-rate">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Testing Pyodide for secure client-side Python execution in Moodle CodeRunner</p>
+        </div>
+    </div>
+
+    <script>
+        // Test cases for Pyodide
+        const tests = [
+            {
+                name: 'Simple Arithmetic',
+                code: 'result = 2 + 3\nprint(result)',
+                expected: '5',
+                testCases: [
+                    { input: '', expectedOutput: '5' }
+                ]
+            },
+            {
+                name: 'String Output',
+                code: 'name = "Pyodide"\nprint(f"Hello, {name}!")',
+                expected: 'Hello, Pyodide!',
+                testCases: [
+                    { input: '', expectedOutput: 'Hello, Pyodide!' }
+                ]
+            },
+            {
+                name: 'Function Definition',
+                code: 'def square(n):\n    return n * n\nprint(square(5))',
+                expected: '25',
+                testCases: [
+                    { input: '', expectedOutput: '25' }
+                ]
+            },
+            {
+                name: 'Loop with Output',
+                code: 'for i in range(3):\n    print(i)',
+                expected: '0\n1\n2',
+                testCases: [
+                    { input: '', expectedOutput: '0\n1\n2' }
+                ]
+            },
+            {
+                name: 'List Operations',
+                code: 'numbers = [1, 2, 3, 4, 5]\ntotal = sum(numbers)\nprint(total)',
+                expected: '15',
+                testCases: [
+                    { input: '', expectedOutput: '15' }
+                ]
+            },
+            {
+                name: 'Dictionary Usage',
+                code: 'person = {"name": "John", "age": 30}\nprint(person["name"])',
+                expected: 'John',
+                testCases: [
+                    { input: '', expectedOutput: 'John' }
+                ]
+            },
+            {
+                name: 'Conditional Logic',
+                code: 'x = 10\nif x > 5:\n    print("Greater")\nelse:\n    print("Smaller")',
+                expected: 'Greater',
+                testCases: [
+                    { input: '', expectedOutput: 'Greater' }
+                ]
+            },
+            {
+                name: 'Error Handling',
+                code: 'try:\n    result = 10 / 2\n    print(result)\nexcept:\n    print("Error")',
+                expected: '5.0',
+                testCases: [
+                    { input: '', expectedOutput: '5.0' }
+                ]
+            }
+        ];
+
+        let pyodideInstance = null;
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0
+        };
+
+        // Console logging
+        function logConsole(message, type = 'log') {
+            const console = document.getElementById('console');
+            const line = document.createElement('div');
+            line.className = 'console-line';
+
+            const time = new Date().toLocaleTimeString();
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'console-time';
+            timeSpan.textContent = `[${time}]`;
+
+            const msgSpan = document.createElement('span');
+            msgSpan.className = `console-${type}`;
+            msgSpan.textContent = message;
+
+            line.appendChild(timeSpan);
+            line.appendChild(document.createTextNode(' '));
+            line.appendChild(msgSpan);
+
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        // Initialize Pyodide
+        async function initPyodide() {
+            logConsole('Loading Pyodide from CDN...', 'info');
+            try {
+                const response = await fetch('https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js');
+                const scriptText = await response.text();
+                eval(scriptText);
+
+                logConsole('Pyodide script loaded, initializing...', 'info');
+                pyodideInstance = await window.loadPyodide();
+                logConsole('✓ Pyodide initialized successfully!', 'log');
+
+                document.getElementById('status-pyodide').textContent = '✓ Pyodide: Ready';
+                document.getElementById('status-pyodide').classList.remove('loading');
+                document.getElementById('status-pyodide').classList.add('success');
+
+                createTestCards();
+                return true;
+            } catch (error) {
+                logConsole(`✗ Failed to initialize Pyodide: ${error.message}`, 'error');
+                document.getElementById('status-pyodide').textContent = '✗ Pyodide: Failed';
+                document.getElementById('status-pyodide').classList.remove('loading');
+                document.getElementById('status-pyodide').classList.add('error');
+                return false;
+            }
+        }
+
+        // Create test cards
+        function createTestCards() {
+            const grid = document.getElementById('test-grid');
+            grid.innerHTML = '';
+
+            tests.forEach((test, index) => {
+                const card = document.createElement('div');
+                card.className = 'test-card';
+
+                card.innerHTML = `
+                    <h3>${test.name}</h3>
+                    <div class="test-code">${escapeHtml(test.code)}</div>
+                    <button class="test-button" onclick="runTest(${index})">Run Test</button>
+                    <div class="test-result" id="result-${index}"></div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            logConsole(`Created ${tests.length} test cases`, 'info');
+        }
+
+        // Run individual test
+        async function runTest(index) {
+            const test = tests[index];
+            const button = event.target;
+            const resultDiv = document.getElementById(`result-${index}`);
+
+            button.disabled = true;
+            button.textContent = 'Running...';
+            resultDiv.classList.remove('show', 'pass', 'fail');
+
+            logConsole(`Running test: ${test.name}...`, 'info');
+
+            try {
+                // Capture output
+                const oldPrint = console.log;
+                let output = '';
+
+                pyodideInstance.globals.set('print_output', '');
+                const code = `
+import sys
+from io import StringIO
+
+old_stdout = sys.stdout
+sys.stdout = StringIO()
+
+try:
+    ${test.code}
+    output = sys.stdout.getvalue()
+except Exception as e:
+    output = f"Error: {str(e)}"
+finally:
+    sys.stdout = old_stdout
+`;
+
+                pyodideInstance.runPython(code);
+                output = pyodideInstance.globals.get('output') || '';
+
+                // Check if output matches expected
+                const passed = output.trim() === test.expected.trim();
+                testResults.total++;
+                passed ? testResults.passed++ : testResults.failed++;
+
+                // Display result
+                const resultClass = passed ? 'pass' : 'fail';
+                const resultIcon = passed ? '✓' : '✗';
+
+                resultDiv.className = `test-result show ${resultClass}`;
+                resultDiv.innerHTML = `
+                    <div class="result-header">${resultIcon} ${passed ? 'PASSED' : 'FAILED'}</div>
+                    <div class="result-detail"><strong>Expected:</strong> ${escapeHtml(test.expected)}</div>
+                    <div class="result-detail"><strong>Got:</strong> ${escapeHtml(output)}</div>
+                `;
+
+                logConsole(`${resultIcon} ${test.name}: ${passed ? 'PASSED' : 'FAILED'}`, passed ? 'log' : 'error');
+
+            } catch (error) {
+                logConsole(`✗ Test error: ${error.message}`, 'error');
+
+                resultDiv.className = 'test-result show fail';
+                resultDiv.innerHTML = `
+                    <div class="result-header">✗ ERROR</div>
+                    <div class="result-detail">${escapeHtml(error.message)}</div>
+                `;
+
+                testResults.total++;
+                testResults.failed++;
+            }
+
+            button.disabled = false;
+            button.textContent = 'Run Test';
+            updateSummary();
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            logConsole('Starting all tests...', 'info');
+            testResults = { total: 0, passed: 0, failed: 0 };
+
+            for (let i = 0; i < tests.length; i++) {
+                await new Promise(resolve => {
+                    setTimeout(async () => {
+                        await runTest(i);
+                        resolve();
+                    }, 500);
+                });
+            }
+
+            logConsole('All tests completed!', 'log');
+        }
+
+        // Update summary statistics
+        function updateSummary() {
+            document.getElementById('total-tests').textContent = testResults.total;
+            document.getElementById('passed-tests').textContent = testResults.passed;
+            document.getElementById('failed-tests').textContent = testResults.failed;
+
+            const rate = testResults.total > 0 
+                ? Math.round((testResults.passed / testResults.total) * 100)
+                : 0;
+            document.getElementById('success-rate').textContent = rate + '%';
+
+            if (testResults.total > 0) {
+                document.getElementById('status-summary').textContent = 
+                    `📊 Summary: ${testResults.passed}/${testResults.total} passed`;
+                document.getElementById('status-summary').classList.add(
+                    testResults.failed === 0 ? 'success' : 'error'
+                );
+            }
+        }
+
+        // Utility function
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+                '\n': '↲\n'
+            };
+            return String(text).replace(/[&<>"'\n]/g, m => map[m]);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', async () => {
+            await initPyodide();
+        });
+
+        // Keyboard shortcut: Ctrl+A to run all tests
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'a' && pyodideInstance) {
+                e.preventDefault();
+                runAllTests();
+            }
+        });
+    </script>
+</body>
+</html>

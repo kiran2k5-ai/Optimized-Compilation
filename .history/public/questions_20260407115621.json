@@ -1,0 +1,97 @@
+{
+  "q1": {
+    "title": "Add Two Numbers",
+    "description": "Write a program that takes two numbers as input and prints their sum.",
+    "language": "python",
+    "tests": [
+      {
+        "input": "5\n10",
+        "expected": "15"
+      },
+      {
+        "input": "100\n200",
+        "expected": "300"
+      },
+      {
+        "input": "-5\n5",
+        "expected": "0"
+      }
+    ]
+  },
+  "q2": {
+    "title": "Find Maximum of Three Numbers",
+    "description": "Write a program that takes three numbers and prints the maximum one.",
+    "language": "python",
+    "tests": [
+      {
+        "input": "10\n5\n20",
+        "expected": "20"
+      },
+      {
+        "input": "100\n50\n75",
+        "expected": "100"
+      },
+      {
+        "input": "15\n15\n15",
+        "expected": "15"
+      }
+    ]
+  },
+  "q3": {
+    "title": "Check Even or Odd",
+    "description": "Write a program that takes a number and prints 'Even' if it's even, 'Odd' if it's odd.",
+    "language": "python",
+    "tests": [
+      {
+        "input": "4",
+        "expected": "Even"
+      },
+      {
+        "input": "7",
+        "expected": "Odd"
+      },
+      {
+        "input": "0",
+        "expected": "Even"
+      }
+    ]
+  },
+  "q4": {
+    "title": "Reverse a String",
+    "description": "Write a program that takes a string as input and prints it in reverse.",
+    "language": "python",
+    "tests": [
+      {
+        "input": "hello",
+        "expected": "olleh"
+      },
+      {
+        "input": "python",
+        "expected": "nohtyp"
+      },
+      {
+        "input": "a",
+        "expected": "a"
+      }
+    ]
+  },
+  "q5": {
+    "title": "Count Character Occurrences",
+    "description": "Write a program that takes a string and a character, then prints how many times the character appears.",
+    "language": "python",
+    "tests": [
+      {
+        "input": "hello\nl",
+        "expected": "2"
+      },
+      {
+        "input": "python\np",
+        "expected": "1"
+      },
+      {
+        "input": "Mississippi\ns",
+        "expected": "4"
+      }
+    ]
+  }
+}

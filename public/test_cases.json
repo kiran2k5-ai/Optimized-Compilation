@@ -1,0 +1,40 @@
+{
+    "python_1": {
+        "title": "Multiply Two Numbers",
+        "language": "python",
+        "tests": [
+            {
+                "input": "5\\n10",
+                "expected": "50"
+            },
+            {
+                "input": "3\\n7",
+                "expected": "21"
+            }
+        ]
+    },
+    "python_2": {
+        "title": "Sum Three Numbers",
+        "language": "python",
+        "tests": [
+            {
+                "input": "10\\n20\\n30",
+                "expected": "60"
+            },
+            {
+                "input": "1\\n2\\n3",
+                "expected": "6"
+            }
+        ]
+    },
+    "test_case_1": {
+        "title": "Test Python Addition",
+        "language": "python",
+        "tests": [
+            {
+                "input": "5\n10",
+                "expected": "15"
+            }
+        ]
+    }
+}

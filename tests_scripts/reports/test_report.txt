@@ -1,0 +1,11 @@
+PYODIDE INTEGRATION - TEST REPORT
+Generated: 2026-04-09 06:59:48
+============================================================
+
+SUMMARY:
+  Total Tests: 10
+  Passed: 5
+  Failed: 5
+  Pass Rate: 50%
+  Execution Time: 0.2 seconds
+

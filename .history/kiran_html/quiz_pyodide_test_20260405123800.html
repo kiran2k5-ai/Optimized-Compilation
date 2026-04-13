@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeRunner Quiz - Pyodide Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .quiz-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+        }
+
+        .quiz-header h1 {
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+
+        .quiz-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .quiz-content {
+            padding: 30px;
+        }
+
+        .question-section {
+            margin-bottom: 30px;
+        }
+
+        .question-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            background: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .answer-section {
+            margin-top: 20px;
+        }
+
+        .answer-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 250px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-check {
+            background: #667eea;
+            color: white;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn-check:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-check:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-clear {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-clear:hover {
+            background: #d0d0d0;
+        }
+
+        .btn-example {
+            background: #f0f0f0;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-example:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .status-bar {
+            background: #f0f0f0;
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #666;
+            display: none;
+        }
+
+        .status-bar.show {
+            display: block;
+        }
+
+        .status-bar.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-bar.success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .status-bar.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            margin-top: 30px;
+            display: none;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .results-header {
+            background: #f5f5f5;
+            padding: 15px;
+            border-bottom: 2px solid #ddd;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .results-header.pass {
+            background: #e8f5e9;
+            border-bottom-color: #4caf50;
+            color: #2e7d32;
+        }
+
+        .results-header.fail {
+            background: #ffebee;
+            border-bottom-color: #f44336;
+            color: #c62828;
+        }
+
+        .results-body {
+            padding: 20px;
+        }
+
+        .test-case {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .test-case.pass {
+            background: #f1f8f6;
+            border-left-color: #4caf50;
+        }
+
+        .test-case.fail {
+            background: #fef5f5;
+            border-left-color: #f44336;
+        }
+
+        .test-case-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-case-header.pass {
+            color: #2e7d32;
+        }
+
+        .test-case-header.fail {
+            color: #c62828;
+        }
+
+        .test-icon {
+            font-size: 18px;
+        }
+
+        .test-details {
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .detail-row {
+            margin: 8px 0;
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 15px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .detail-value {
+            background: white;
+            padding: 6px 10px;
+            border-radius: 3px;
+            border: 1px solid #e0e0e0;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .error-message {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .example-code {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+
+        .feedback-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+        }
+
+        .grade-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 10px;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Quiz Header -->
+        <div class="quiz-header">
+            <h1>Quiz: Python Programming</h1>
+            <p>Question 1 of 1 - CodeRunner with Pyodide</p>
+        </div>
+
+        <!-- Quiz Content -->
+        <div class="quiz-content">
+            <div class="info-box">
+                ℹ️ <strong>Note:</strong> Your code will execute in <strong>Pyodide</strong> (Python runtime in the browser).
+                No data is sent to the server. Results are computed locally on your computer.
+            </div>
+
+            <!-- Question -->
+            <div class="question-section">
+                <div class="question-title">📝 Write a Python program to calculate the square of a number</div>
+                <div class="question-text">
+                    <strong>Problem:</strong> Write a Python program that reads a number and prints its square.
+                    <br><br>
+                    <strong>Test Cases:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Input: 5 → Expected Output: 25</li>
+                        <li>Input: 10 → Expected Output: 100</li>
+                        <li>Input: 3 → Expected Output: 9</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Answer -->
+            <div class="answer-section">
+                <label class="answer-label" for="code-answer">Your Answer:</label>
+                <textarea id="code-answer" placeholder="Enter your Python code here...
+# Example:
+# number = 5
+# result = number ** 2
+# print(result)"></textarea>
+
+                <div class="button-group">
+                    <button class="btn btn-check" id="check-btn" onclick="submitCode()">
+                        ✓ Check
+                    </button>
+                    <button class="btn btn-clear" onclick="clearCode()">
+                        🗑️ Clear
+                    </button>
+                    <button class="btn btn-example" onclick="loadExample()">
+                        💡 Load Example
+                    </button>
+                </div>
+
+                <div class="status-bar" id="status-bar"></div>
+            </div>
+
+            <!-- Results -->
+            <div class="results-section" id="results-section">
+                <div class="results-header" id="results-header">
+                    Test Results
+                </div>
+                <div class="results-body" id="results-body">
+                    <!-- Results will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pyodideInstance = null;
+        let pyodideReady = false;
+
+        // Test cases
+        const testCases = [
+            {
+                name: 'Test Case 1',
+                code: 'number = 5\nresult = number ** 2\nprint(result)',
+                expectedOutput: '25'
+            },
+            {
+                name: 'Test Case 2',
+                code: 'number = 10\nresult = number ** 2\nprint(result)',
+                expectedOutput: '100'
+            },
+            {
+                name: 'Test Case 3',
+                code: 'number = 3\nresult = number ** 2\nprint(result)',
+                expectedOutput: '9'
+            }
+        ];
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            const bar = document.getElementById('status-bar');
+            bar.textContent = message;
+            bar.className = `status-bar show ${type}`;
+            if (type === 'loading') {
+                bar.innerHTML = `<span class="spinner"></span>${message}`;
+            }
+        }
+
+        // Initialize Pyodide
+        async function initPyodide() {
+            if (pyodideReady) {
+                return;
+            }
+
+            showStatus('⏳ Loading Pyodide from CDN...', 'loading');
+
+            try {
+                // Load Pyodide from CDN as script
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js';
+                script.onload = async () => {
+                    try {
+                        pyodideInstance = await window.loadPyodide();
+                        pyodideReady = true;
+                        console.log('✓ Pyodide initialized successfully');
+                        showStatus('✓ Pyodide ready! You can now submit code.', 'success');
+                    } catch (error) {
+                        console.error('Pyodide init error:', error);
+                        showStatus(`✗ Error initializing Pyodide: ${error.message}`, 'error');
+                    }
+                };
+                script.onerror = () => {
+                    showStatus('✗ Failed to load Pyodide from CDN', 'error');
+                };
+                document.head.appendChild(script);
+            } catch (error) {
+                console.error('Error loading Pyodide:', error);
+                showStatus(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Execute student code
+        async function executeCode(studentCode) {
+            if (!pyodideReady || !pyodideInstance) {
+                showStatus('✗ Pyodide not ready. Please wait and try again.', 'error');
+                return;
+            }
+
+            showStatus('⏳ Running your code with Pyodide...', 'loading');
+
+            try {
+                const results = [];
+                let allPassed = true;
+
+                // Run each test case
+                for (let i = 0; i < testCases.length; i++) {
+                    const testCase = testCases[i];
+
+                    try {
+                        // Create a new context for each test
+                        const code = `
+import sys
+from io import StringIO
+
+# Capture output
+old_stdout = sys.stdout
+sys.stdout = StringIO()
+
+try:
+    # Student code
+    ${studentCode}
+    
+    # Get the output
+    output = sys.stdout.getvalue()
+    error = None
+except Exception as e:
+    sys.stdout = old_stdout
+    output = ""
+    error = str(e)
+else:
+    sys.stdout = old_stdout
+
+output = output.strip()
+`;
+
+                        pyodideInstance.runPython(code);
+
+                        const output = pyodideInstance.globals.get('output') || '';
+                        const error = pyodideInstance.globals.get('error');
+
+                        // Check if test passed
+                        const passed = output === testCase.expectedOutput.trim();
+
+                        if (!passed) {
+                            allPassed = false;
+                        }
+
+                        results.push({
+                            name: testCase.name,
+                            passed: passed,
+                            expected: testCase.expectedOutput.trim(),
+                            actual: output,
+                            error: error && error !== 'None' ? error : null
+                        });
+
+                    } catch (error) {
+                        allPassed = false;
+                        results.push({
+                            name: testCase.name,
+                            passed: false,
+                            expected: testCase.expectedOutput.trim(),
+                            actual: '',
+                            error: error.toString()
+                        });
+                    }
+                }
+
+                displayResults(results, allPassed);
+                showStatus(allPassed ? '✓ All tests passed! Great job!' : '✗ Some tests failed. Try again!', allPassed ? 'success' : 'error');
+
+            } catch (error) {
+                console.error('Execution error:', error);
+                showStatus(`✗ Execution error: ${error.message}`, 'error');
+                displayError(error.message);
+            }
+        }
+
+        // Display results
+        function displayResults(results, allPassed) {
+            const resultSection = document.getElementById('results-section');
+            const resultsHeader = document.getElementById('results-header');
+            const resultsBody = document.getElementById('results-body');
+
+            // Update header
+            resultsHeader.textContent = allPassed ? '✓ All Tests Passed!' : '✗ Some Tests Failed';
+            resultsHeader.className = `results-header ${allPassed ? 'pass' : 'fail'}`;
+
+            // Clear previous results
+            resultsBody.innerHTML = '';
+
+            // Add each test result
+            results.forEach((result) => {
+                const testDiv = document.createElement('div');
+                testDiv.className = `test-case ${result.passed ? 'pass' : 'fail'}`;
+
+                const headerDiv = document.createElement('div');
+                headerDiv.className = `test-case-header ${result.passed ? 'pass' : 'fail'}`;
+                headerDiv.innerHTML = `
+                    <span class="test-icon">${result.passed ? '✓' : '✗'}</span>
+                    <span>${result.name}</span>
+                `;
+
+                const detailsDiv = document.createElement('div');
+                detailsDiv.className = 'test-details';
+
+                const rows = [
+                    { label: 'Expected:', value: result.expected || '(empty)' },
+                    { label: 'Got:', value: result.actual || '(empty)' }
+                ];
+
+                if (result.error) {
+                    rows.push({ label: 'Error:', value: result.error });
+                }
+
+                rows.forEach(row => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'detail-row';
+                    rowDiv.innerHTML = `
+                        <div class="detail-label">${row.label}</div>
+                        <div class="detail-value">${escapeHtml(row.value)}</div>
+                    `;
+                    detailsDiv.appendChild(rowDiv);
+                });
+
+                testDiv.appendChild(headerDiv);
+                testDiv.appendChild(detailsDiv);
+                resultsBody.appendChild(testDiv);
+            });
+
+            // Get grade
+            const passed = results.filter(r => r.passed).length;
+            const total = results.length;
+            const percentage = Math.round((passed / total) * 100);
+
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.className = 'feedback-section';
+            feedbackDiv.innerHTML = `
+                <strong>Your Score:</strong>
+                <div class="grade-display">${passed}/${total} tests passed (${percentage}%)</div>
+            `;
+            resultsBody.appendChild(feedbackDiv);
+
+            resultSection.classList.add('show');
+        }
+
+        // Display error
+        function displayError(errorMessage) {
+            const resultSection = document.getElementById('results-section');
+            const resultsHeader = document.getElementById('results-header');
+            const resultsBody = document.getElementById('results-body');
+
+            resultsHeader.textContent = '✗ Execution Error';
+            resultsHeader.className = 'results-header fail';
+
+            resultsBody.innerHTML = `
+                <div class="error-message">
+                    <strong>Error:</strong><br>
+                    ${escapeHtml(errorMessage)}
+                </div>
+            `;
+
+            resultSection.classList.add('show');
+        }
+
+        // Submit code
+        async function submitCode() {
+            const codeTextarea = document.getElementById('code-answer');
+            const checkBtn = document.getElementById('check-btn');
+            const code = codeTextarea.value.trim();
+
+            if (!code) {
+                showStatus('✗ Please enter some code first!', 'error');
+                return;
+            }
+
+            if (!pyodideReady) {
+                showStatus('✗ Pyodide is still loading. Please wait...', 'error');
+                return;
+            }
+
+            checkBtn.disabled = true;
+            await executeCode(code);
+            checkBtn.disabled = false;
+        }
+
+        // Clear code
+        function clearCode() {
+            document.getElementById('code-answer').value = '';
+            document.getElementById('code-answer').focus();
+            showStatus('', 'info');
+            document.getElementById('results-section').classList.remove('show');
+        }
+
+        // Load example
+        function loadExample() {
+            const exampleCode = `# Solution: Calculate the square of a number
+number = int(input("Enter a number: "))
+result = number ** 2
+print(result)`;
+            
+            document.getElementById('code-answer').value = exampleCode;
+            document.getElementById('code-answer').focus();
+            showStatus('💡 Example code loaded!', 'success');
+        }
+
+        // Utility
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+                '\n': '↲\n'
+            };
+            return String(text).replace(/[&<>"'\n]/g, m => map[m]);
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            console.log('Page loaded, initializing Pyodide...');
+            initPyodide();
+        });
+
+        // Allow Enter key to submit (Ctrl+Enter)
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter' && pyodideReady) {
+                submitCode();
+            }
+        });
+    </script>
+</body>
+</html>
