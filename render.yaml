@@ -1,0 +1,60 @@
+# render.yaml - Render.com deployment configuration
+# This file automates deployment to Render.com
+
+services:
+  - type: web
+    name: coderunner-academy
+    runtime: docker
+    
+    # Build configuration
+    dockerfilePath: ./Dockerfile
+    
+    # Environment
+    region: oregon  # Change to your region
+    
+    # Environment variables
+    envVars:
+      - key: MOODLE_URL
+        value: https://coderunner-academy.onrender.com
+      - key: MOODLE_ADMIN_USERNAME
+        value: admin
+      - key: CODERUNNER_ENABLED
+        value: "true"
+      - key: CODERUNNER_SECURITY_ENABLED
+        value: "true"
+      - key: CODERUNNER_MAX_CODE_SIZE
+        value: "100000"
+      - key: CODERUNNER_MAX_OUTPUT_SIZE
+        value: "50000"
+      - key: CODERUNNER_EXECUTION_TIMEOUT
+        value: "5"
+      - key: DEBUG_MODE
+        value: "false"
+    
+    # Database connection (Render MySQL)
+    envVarDefinitions:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: coderunner-db
+          property: connectionString
+    
+    # Build command
+    staticPublishPath: ./public
+    
+    # Scaling
+    numInstances: 1
+    plan: free  # or 'starter' ($7/month)
+    
+    disk:
+      name: moodledata
+      mountPath: /var/moodledata
+      sizeGB: 10
+
+  - type: mysql
+    name: coderunner-db
+    plan: free
+    ipAllowList: []  # Allow all IPs (restrict in config.php)
+    
+databases:
+  - name: moodle
+    dbName: moodle

@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Web Server (Apache + PHP 8.2)
+  moodle:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coderunner-academy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=moodle
+      - DB_USER=moodle
+      - DB_PASSWORD=moodlepass
+      - MOODLE_URL=http://localhost
+      - CODERUNNER_ENABLED=true
+      - SECURITY_ENABLED=true
+      - DEBUG_MODE=false
+    volumes:
+      - ./:/var/www/html/moodle
+      - moodledata:/var/moodledata
+      - ./logs:/var/log/apache2
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - coderunner-network
+    restart: unless-stopped
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: coderunner-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=moodle
+      - MYSQL_USER=moodle
+      - MYSQL_PASSWORD=moodlepass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coderunner-network
+    restart: unless-stopped
+
+  # PhpMyAdmin (Optional - for database management)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: coderunner-pma
+    environment:
+      - PMA_HOST=mysql
+      - PMA_USER=root
+      - PMA_PASSWORD=rootpass
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - coderunner-network
+    restart: unless-stopped
+
+volumes:
+  moodledata:
+  mysql_data:
+
+networks:
+  coderunner-network:
+    driver: bridge
