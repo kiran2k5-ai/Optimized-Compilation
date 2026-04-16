@@ -1,0 +1,158 @@
+## 🚨 RENDER DEPLOYMENT ERROR - FIX
+═════════════════════════════════════════════════════════════════════════════
+
+ERROR MESSAGE:
+──────────────────────────────────────────────────────────────────────────────
+"Exited with status 127 while building your code"
+"Running build command 'yarnphp composer.phar install'..."
+"bash: line 1: yarnphp: command not found"
+
+ROOT CAUSE:
+──────────────────────────────────────────────────────────────────────────────
+1. Build command was malformed (missing space between yarn and php)
+2. .nvmrc file made Render think it's a Node.js project
+3. Not using Docker to build
+
+SOLUTION:
+══════════════════════════════════════════════════════════════════════════════
+
+We have 2 options. Choose ONE:
+
+═════════════════════════════════════════════════════════════════════════════
+
+OPTION 1: FIX CURRENT DEPLOYMENT (5 minutes)
+══════════════════════════════════════════════════════════════════════════════
+
+Step 1: Delete the current service on Render
+─────────────────────────────────────────────────────────────────────────────
+Render Dashboard → Services → coderunner-academy
+→ Settings → Scroll to bottom "Delete Service" → Confirm
+
+Step 2: Delete the MySQL service
+─────────────────────────────────────────────────────────────────────────────
+Render Dashboard → Services → coderunner-db
+→ Settings → Scroll to bottom "Delete" → Confirm
+
+Step 3: Create NEW Web Service (Correct Settings)
+─────────────────────────────────────────────────────────────────────────────
+Dashboard → "New+" → "Web Service"
+Select repo: "Optimized-Compilation"
+
+FILL IN EXACTLY:
+┌─────────────────────────────────────────────────────────────────┐
+│ Name:                    coderunner-academy                    │
+│ Environment:             Docker                                │
+│ Region:                  Oregon (US West)                      │
+│                                                                 │
+│ Build Command:           (LEAVE BLANK)                         │
+│ Start Command:           (LEAVE BLANK)                         │
+│                                                                 │
+│ (Let Dockerfile handle everything)                            │
+│                                                                 │
+│ Click: "Advanced" → Enable "Auto-deploy on push"              │
+│ Click: "Create Web Service"                                   │
+└─────────────────────────────────────────────────────────────────┘
+
+Step 4: Create MySQL Service
+─────────────────────────────────────────────────────────────────────────────
+Dashboard → "New+" → "MySQL"
+Name: coderunner-db
+Region: Oregon
+Click: "Create"
+
+Step 5: Add Environment Variables
+─────────────────────────────────────────────────────────────────────────────
+Web Service → "Environment" → Add:
+
+DB_HOST=[copy from MySQL Connections tab]
+DB_NAME=moodle
+DB_USER=admin
+DB_PASSWORD=[copy from MySQL]
+MOODLE_URL=coderunner-academy.onrender.com
+CODERUNNER_ENABLED=true
+SECURITY_ENABLED=true
+
+Click: "Save"
+
+WAIT: 10-15 minutes for deployment
+DONE: Navigate to https://coderunner-academy.onrender.com ✅
+
+═════════════════════════════════════════════════════════════════════════════
+
+OPTION 2: START COMPLETELY FRESH (10 minutes)
+══════════════════════════════════════════════════════════════════════════════
+
+This is safer if something else broke.
+
+Step 1: Push Fixed Code to GitHub
+──────────────────────────────────────────────────────────────────────────────
+Run these commands locally:
+
+cd e:\moodel_xampp\htdocs\moodle
+git add .
+git commit -m "Fix Render deployment - remove Node.js config"
+git push origin main
+
+Wait: 1-2 minutes for GitHub to update
+
+Step 2: Delete all Render services
+─────────────────────────────────────────────────────────────────────────────
+Render Dashboard → Each service → Settings → Delete
+(Delete: coderunner-academy, coderunner-db)
+
+Step 3: Create new service from GitHub
+─────────────────────────────────────────────────────────────────────────────
+Dashboard → "New+" → "Web Service"
+Select: GitHub repo "Optimized-Compilation"
+Choose settings (see OPTION 1 Step 3 above)
+
+Step 4: Wait 15-20 minutes for build
+─────────────────────────────────────────────────────────────────────────────
+Render Dashboard → coderunner-academy → Logs
+Watch build progress
+
+If succeeds: Site goes LIVE ✅
+If fails: Check logs for new error
+
+═════════════════════════════════════════════════════════════════════════════
+
+WHAT WE FIXED:
+══════════════════════════════════════════════════════════════════════════════
+
+[✅] Removed .nvmrc file
+     └─ Stops Render from treating this as Node.js project
+
+[✅] Created build.sh script
+     └─ For manual builds if needed
+
+[✅] Will use Dockerfile
+     └─ Tells Render exactly how to build
+
+[✅] GitHub repo updated with correct config
+
+═════════════════════════════════════════════════════════════════════════════
+
+WHY THE ERROR HAPPENED:
+══════════════════════════════════════════════════════════════════════════════
+
+RENDER DETECTED:
+  1. .nvmrc file → "This is a Node.js project"
+  2. Tried to use yarn (Node package manager)
+  3. Build command had typo: "yarnphp" instead of "yarn && php"
+  4. Failed with: "command not found"
+
+MOODLE IS:
+  1. PHP application (not Node.js)
+  2. Doesn't need yarn or npm
+  3. Needs Apache + PHP + MySQL
+
+SOLUTION: Tell Render to use Docker instead
+
+═════════════════════════════════════════════════════════════════════════════
+
+READY FOR ROUND 2?
+══════════════════════════════════════════════════════════════════════════════
+
+Follow OPTION 1 or OPTION 2 above (choose one)
+
+Questions? Let me know! ✅
