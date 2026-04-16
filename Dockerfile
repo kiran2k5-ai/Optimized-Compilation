@@ -1,75 +1,69 @@
 # Dockerfile for CodeRunner Academy
 # Builds a production-ready Moodle container with CodeRunner
 
-FROM ubuntu:22.04
+FROM php:8.2-apache
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    PHP_VERSION=8.2 \
     MOODLE_VERSION=4.0
 
-# Add PHP repository for more packages
-RUN apt-get update && apt-get install -y \
-    software-properties-common \
-    && add-apt-repository ppa:ondrej/php \
-    && apt-get update
-
-# Install base packages
-RUN apt-get install -y \
-    apache2 \
-    apache2-utils \
-    php${PHP_VERSION} \
-    php${PHP_VERSION}-common \
-    php${PHP_VERSION}-mysql \
-    php${PHP_VERSION}-curl \
-    php${PHP_VERSION}-gd \
-    php${PHP_VERSION}-intl \
-    php${PHP_VERSION}-xml \
-    php${PHP_VERSION}-zip \
-    php${PHP_VERSION}-mbstring \
+# Install required PHP extensions and system packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libxml2-dev \
+    libcurl4-openssl-dev \
+    libpq-dev \
+    libzip-dev \
     mariadb-client \
     curl \
     git \
     nano \
     wget \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+    gd \
+    pdo_mysql \
+    mysqli \
+    intl \
+    xml \
+    xmlrpc \
+    zip \
+    curl
+
 
 # Enable Apache modules
 RUN a2enmod rewrite \
-    && a2enmod headers \
-    && a2enmod ssl
+    && a2enmod headers
 
 # Create Moodle directories
-RUN mkdir -p /var/www/html/moodle \
-    && mkdir -p /var/moodledata \
+RUN install -d -m 0755 /var/moodledata \
     && chown -R www-data:www-data /var/www/html \
-    && chown -R www-data:www-data /var/moodledata \
-    && chmod 755 /var/moodledata
+    && chown -R www-data:www-data /var/moodledata
 
 # Copy application files
-COPY . /var/www/html/moodle/
-
-# Copy security files
-RUN chown -R www-data:www-data /var/www/html/moodle && \
-    chmod 755 /var/www/html/moodle
+COPY --chown=www-data:www-data . /var/www/html/
 
 # Configure PHP
-RUN echo "upload_max_filesize = 100M" >> /etc/php/${PHP_VERSION}/apache2/php.ini && \
-    echo "post_max_size = 100M" >> /etc/php/${PHP_VERSION}/apache2/php.ini && \
-    echo "max_execution_time = 300" >> /etc/php/${PHP_VERSION}/apache2/php.ini
+RUN echo "upload_max_filesize = 100M" >> /usr/local/etc/php/conf.d/moodle.ini && \
+    echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/moodle.ini && \
+    echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/moodle.ini && \
+    echo "default_charset = 'UTF-8'" >> /usr/local/etc/php/conf.d/moodle.ini
 
 # Configure Apache
 RUN a2dissite 000-default && \
     cat > /etc/apache2/sites-available/moodle.conf << 'EOF'
 <VirtualHost *:80>
-    DocumentRoot /var/www/html/moodle/public
+    DocumentRoot /var/www/html/public
     
-    <Directory /var/www/html/moodle/public>
+    <Directory /var/www/html/public>
         Options FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
     
-    <Directory /var/www/html/moodle>
+    <Directory /var/www/html>
         Options -Indexes
         AllowOverride None
     </Directory>
@@ -86,7 +80,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost/ || exit 1
 
 # Expose port
-EXPOSE 80 443
+EXPOSE 80
 
 # Start Apache
-CMD ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]
+CMD ["apache2-foreground"]
