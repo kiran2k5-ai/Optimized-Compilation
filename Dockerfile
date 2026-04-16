@@ -7,19 +7,24 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PHP_VERSION=8.2 \
     MOODLE_VERSION=4.0
 
-# Install base packages
+# Add PHP repository for more packages
 RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    && add-apt-repository ppa:ondrej/php \
+    && apt-get update
+
+# Install base packages
+RUN apt-get install -y \
     apache2 \
     apache2-utils \
     php${PHP_VERSION} \
+    php${PHP_VERSION}-common \
     php${PHP_VERSION}-mysql \
     php${PHP_VERSION}-curl \
     php${PHP_VERSION}-gd \
     php${PHP_VERSION}-intl \
     php${PHP_VERSION}-xml \
-    php${PHP_VERSION}-xmlrpc \
     php${PHP_VERSION}-zip \
-    php${PHP_VERSION}-soap \
     php${PHP_VERSION}-mbstring \
     mariadb-client \
     curl \
