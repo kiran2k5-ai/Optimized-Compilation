@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev \
     libzip-dev \
     libxml2-dev \
+    libicu-dev \
     mariadb-client \
     git \
     && rm -rf /var/lib/apt/lists/*
