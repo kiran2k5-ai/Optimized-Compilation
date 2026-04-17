@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libicu-dev \
     libonig-dev \
     mariadb-client \
+    postgresql-client \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -90,51 +91,105 @@ RUN cat > /usr/local/bin/docker-entrypoint.sh << 'SCRIPT'
 #!/bin/bash
 set -e
 
-# Set defaults from environment or use docker-compose values
-DB_HOST="${DB_HOST:-mysql}"
-DB_USER="${DB_USER:-moodle}"
-DB_PASSWORD="${DB_PASSWORD:-moodlepass}"
-DB_NAME="${DB_NAME:-moodle}"
-DB_PORT="${DB_PORT:-3306}"
-
-echo "Database Configuration:"
-echo "  Host: $DB_HOST"
-echo "  User: $DB_USER"
-echo "  Database: $DB_NAME"
-echo "  Port: $DB_PORT"
-
-# Wait for MySQL to be ready
-echo "Waiting for MySQL to be ready..."
-max_attempts=60
-attempt=0
-while [ $attempt -lt $max_attempts ]; do
-    if mariadb-admin ping -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASSWORD" -P"$DB_PORT" --silent 2>/dev/null; then
-        echo "✓ MySQL is ready!"
-        break
-    fi
-    attempt=$((attempt + 1))
-    if [ $((attempt % 10)) -eq 0 ]; then
-        echo "  ... still waiting ($attempt/$max_attempts)"
-    fi
-    sleep 1
-done
+# Detect database type and configuration
+if [ -n "$DATABASE_URL" ]; then
+    # Render PostgreSQL (auto-injected via DATABASE_URL)
+    echo "✓ Detected Render PostgreSQL"
+    # DATABASE_URL format: postgresql://user:pass@host:port/dbname
+    export PGPASSWORD=$(echo "$DATABASE_URL" | sed 's/.*:\([^@]*\)@.*/\1/')
+    DB_HOST=$(echo "$DATABASE_URL" | sed 's/.*@\([^:]*\).*/\1/')
+    DB_PORT=$(echo "$DATABASE_URL" | sed 's/.*:\([0-9]*\)\/.*/\1/')
+    DB_NAME=$(echo "$DATABASE_URL" | sed 's/.*\/\(.*\)/\1/')
+    DB_USER=$(echo "$DATABASE_URL" | sed 's/.*:\/\/\([^:]*\).*/\1/')
+    DB_TYPE="pgsql"
+    
+    echo "Database Configuration:"
+    echo "  Type: PostgreSQL"
+    echo "  Host: $DB_HOST"
+    echo "  Port: $DB_PORT"
+    echo "  Database: $DB_NAME"
+    echo "  User: $DB_USER"
+    
+    # Wait for PostgreSQL
+    echo "Waiting for PostgreSQL to be ready..."
+    max_attempts=90
+    attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        if pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" 2>/dev/null | grep -q "accepting"; then
+            echo "✓ PostgreSQL is ready!"
+            break
+        fi
+        attempt=$((attempt + 1))
+        if [ $((attempt % 15)) -eq 0 ]; then
+            echo "  ... still waiting ($attempt/$max_attempts)"
+        fi
+        sleep 1
+    done
+else
+    # Fallback to MariaDB for local docker-compose
+    echo "✓ Using local MariaDB (docker-compose)"
+    DB_HOST="${DB_HOST:-mysql}"
+    DB_USER="${DB_USER:-moodle}"
+    DB_PASSWORD="${DB_PASSWORD:-moodlepass}"
+    DB_NAME="${DB_NAME:-moodle}"
+    DB_PORT="${DB_PORT:-3306}"
+    DB_TYPE="mariadb"
+    
+    echo "Database Configuration:"
+    echo "  Type: MariaDB"
+    echo "  Host: $DB_HOST"
+    echo "  Port: $DB_PORT"
+    echo "  Database: $DB_NAME"
+    echo "  User: $DB_USER"
+    
+    # Wait for MariaDB
+    echo "Waiting for MariaDB to be ready..."
+    max_attempts=90
+    attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        if mariadb-admin ping -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASSWORD" -P"$DB_PORT" --silent 2>/dev/null; then
+            echo "✓ MariaDB is ready!"
+            break
+        fi
+        attempt=$((attempt + 1))
+        if [ $((attempt % 15)) -eq 0 ]; then
+            echo "  ... still waiting ($attempt/$max_attempts)"
+        fi
+        sleep 1
+    done
+fi
 
 if [ $attempt -eq $max_attempts ]; then
-    echo "⚠ MySQL connection timeout after $max_attempts attempts!"
+    echo "⚠ Database connection timeout after $max_attempts attempts!"
     echo "Continuing anyway - database may initialize later..."
 fi
 
 # Check if Moodle tables exist
 echo "Checking if Moodle database is initialized..."
-if ! mariadb -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASSWORD" -P"$DB_PORT" "$DB_NAME" -e "SHOW TABLES LIKE 'mdl_%';" 2>/dev/null | grep -q mdl_; then
-    echo "Database is empty. Initializing Moodle..."
-    cd /var/www/html
-    php admin/cli/install_database.php \
-        --adminuser=admin \
-        --adminpass=Admin@123456 \
-        --adminemail=admin@example.com || echo "⚠ Database initialization attempted (may fail if DB not ready)"
+if [ "$DB_TYPE" = "pgsql" ]; then
+    # PostgreSQL check
+    if ! PGPASSWORD="$PGPASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1 FROM information_schema.tables WHERE table_name='mdl_course';" 2>/dev/null | grep -q 1; then
+        echo "Database is empty. Initializing Moodle..."
+        cd /var/www/html
+        php admin/cli/install_database.php \
+            --adminuser=admin \
+            --adminpass=Admin@123456 \
+            --adminemail=admin@example.com || echo "⚠ Database initialization attempted"
+    else
+        echo "✓ Moodle database already initialized"
+    fi
 else
-    echo "✓ Moodle database already initialized"
+    # MariaDB check
+    if ! mariadb -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASSWORD" -P"$DB_PORT" "$DB_NAME" -e "SHOW TABLES LIKE 'mdl_%';" 2>/dev/null | grep -q mdl_; then
+        echo "Database is empty. Initializing Moodle..."
+        cd /var/www/html
+        php admin/cli/install_database.php \
+            --adminuser=admin \
+            --adminpass=Admin@123456 \
+            --adminemail=admin@example.com || echo "⚠ Database initialization attempted"
+    else
+        echo "✓ Moodle database already initialized"
+    fi
 fi
 
 echo "Starting Apache..."
