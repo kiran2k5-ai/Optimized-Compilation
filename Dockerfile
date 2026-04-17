@@ -16,7 +16,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libicu-dev \
     libonig-dev \
     mariadb-client \
-    mysql-client \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -96,7 +95,7 @@ echo "Waiting for MySQL to be ready..."
 max_attempts=30
 attempt=0
 while [ $attempt -lt $max_attempts ]; do
-    if mysqladmin ping -h"${DB_HOST:-mysql}" -u"${DB_USER:-moodle}" -p"${DB_PASSWORD:-moodlepass}" --silent 2>/dev/null; then
+    if mariadb-admin ping -h"${DB_HOST:-mysql}" -u"${DB_USER:-moodle}" -p"${DB_PASSWORD:-moodlepass}" --silent 2>/dev/null; then
         echo "MySQL is ready!"
         break
     fi
@@ -110,7 +109,7 @@ if [ $attempt -eq $max_attempts ]; then
 fi
 
 # Check if Moodle tables exist
-if ! mysql -h"${DB_HOST:-mysql}" -u"${DB_USER:-moodle}" -p"${DB_PASSWORD:-moodlepass}" "${DB_NAME:-moodle}" -e "SHOW TABLES LIKE 'mdl_%';" 2>/dev/null | grep -q mdl_; then
+if ! mariadb -h"${DB_HOST:-mysql}" -u"${DB_USER:-moodle}" -p"${DB_PASSWORD:-moodlepass}" "${DB_NAME:-moodle}" -e "SHOW TABLES LIKE 'mdl_%';" 2>/dev/null | grep -q mdl_; then
     echo "Initializing Moodle database..."
     cd /var/www/html
     php admin/cli/install_database.php \
