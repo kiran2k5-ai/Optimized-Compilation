@@ -19,7 +19,14 @@ $CFG->dboptions = array (
 );
 
 $CFG->wwwroot   = 'http://localhost';
-$CFG->dataroot  = 'E:\\moodel_xampp\\moodledata';
+// Set dataroot based on environment (Docker vs Local)
+if (is_dir('/var/moodledata')) {
+    // Running in Docker container
+    $CFG->dataroot  = '/var/moodledata';
+} else {
+    // Running locally on Windows
+    $CFG->dataroot  = 'E:\\moodel_xampp\\moodledata';
+}
 $CFG->admin     = 'admin';
 
 // Allow localhost for Jobe API calls (local development)
