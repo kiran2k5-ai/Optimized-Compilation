@@ -91,14 +91,14 @@ if ($is_docker) {
     // Production debug settings
     @error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
     @ini_set('display_errors', '0');
-    $CFG->debug = DEBUG_MINIMAL;
+    $CFG->debug = 1; // DEBUG_MINIMAL
     $CFG->debugdisplay = false;
     $CFG->logsdir = '/var/log/moodle';
 } else {
     // Development debug settings
     @error_reporting(E_ALL | E_STRICT);
     @ini_set('display_errors', '1');
-    $CFG->debug = DEBUG_DEVELOPER;
+    $CFG->debug = 32767; // DEBUG_DEVELOPER
     $CFG->debugdisplay = true;
 }
 
