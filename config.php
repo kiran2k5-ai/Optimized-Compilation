@@ -6,10 +6,22 @@ $CFG = new stdClass();
 
 $CFG->dbtype    = 'mariadb';
 $CFG->dblibrary = 'native';
-$CFG->dbhost    = 'localhost';
-$CFG->dbname    = 'moodle';
-$CFG->dbuser    = 'root';
-$CFG->dbpass    = '';
+
+// Set database details based on environment
+if (is_dir('/var/moodledata')) {
+    // Running in Docker container
+    $CFG->dbhost    = 'mysql';
+    $CFG->dbname    = 'moodle';
+    $CFG->dbuser    = 'moodle';
+    $CFG->dbpass    = 'moodlepass';
+} else {
+    // Running locally on Windows
+    $CFG->dbhost    = 'localhost';
+    $CFG->dbname    = 'moodle';
+    $CFG->dbuser    = 'root';
+    $CFG->dbpass    = '';
+}
+
 $CFG->prefix    = 'mdl_';
 $CFG->dboptions = array (
   'dbpersist' => 0,
