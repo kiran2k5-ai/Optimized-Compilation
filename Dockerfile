@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev \
     libxml2-dev \
     libicu-dev \
+    libonig-dev \
     mariadb-client \
     git \
     && rm -rf /var/lib/apt/lists/*
