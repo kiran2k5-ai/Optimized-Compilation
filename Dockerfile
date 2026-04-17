@@ -16,7 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libicu-dev \
     libonig-dev \
     mariadb-client \
+    mysql-client \
     git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions that Moodle actually needs
@@ -84,6 +86,45 @@ RUN a2ensite moodle.conf
 RUN chown -R www-data:www-data /var/www/html && \
     chmod -R 755 /var/www/html
 
+# Create startup script for database initialization
+RUN cat > /usr/local/bin/docker-entrypoint.sh << 'SCRIPT'
+#!/bin/bash
+set -e
+
+# Wait for MySQL to be ready
+echo "Waiting for MySQL to be ready..."
+max_attempts=30
+attempt=0
+while [ $attempt -lt $max_attempts ]; do
+    if mysqladmin ping -h"${DB_HOST:-mysql}" -u"${DB_USER:-moodle}" -p"${DB_PASSWORD:-moodlepass}" --silent 2>/dev/null; then
+        echo "MySQL is ready!"
+        break
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+done
+
+if [ $attempt -eq $max_attempts ]; then
+    echo "MySQL connection timeout!"
+    exit 1
+fi
+
+# Check if Moodle tables exist
+if ! mysql -h"${DB_HOST:-mysql}" -u"${DB_USER:-moodle}" -p"${DB_PASSWORD:-moodlepass}" "${DB_NAME:-moodle}" -e "SHOW TABLES LIKE 'mdl_%';" 2>/dev/null | grep -q mdl_; then
+    echo "Initializing Moodle database..."
+    cd /var/www/html
+    php admin/cli/install_database.php \
+        --adminuser=admin \
+        --adminpass=Admin@123456 \
+        --adminemail=admin@example.com || echo "Database initialization attempted"
+fi
+
+echo "Starting Apache..."
+exec apache2-foreground
+SCRIPT
+
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost/ || exit 1
@@ -91,5 +132,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Expose HTTP port
 EXPOSE 80
 
-# Start Apache in foreground
-CMD ["apache2-foreground"]
+# Start with entrypoint script
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
