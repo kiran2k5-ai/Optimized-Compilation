@@ -90,32 +90,51 @@ RUN cat > /usr/local/bin/docker-entrypoint.sh << 'SCRIPT'
 #!/bin/bash
 set -e
 
+# Set defaults from environment or use docker-compose values
+DB_HOST="${DB_HOST:-mysql}"
+DB_USER="${DB_USER:-moodle}"
+DB_PASSWORD="${DB_PASSWORD:-moodlepass}"
+DB_NAME="${DB_NAME:-moodle}"
+DB_PORT="${DB_PORT:-3306}"
+
+echo "Database Configuration:"
+echo "  Host: $DB_HOST"
+echo "  User: $DB_USER"
+echo "  Database: $DB_NAME"
+echo "  Port: $DB_PORT"
+
 # Wait for MySQL to be ready
 echo "Waiting for MySQL to be ready..."
-max_attempts=30
+max_attempts=60
 attempt=0
 while [ $attempt -lt $max_attempts ]; do
-    if mariadb-admin ping -h"${DB_HOST:-mysql}" -u"${DB_USER:-moodle}" -p"${DB_PASSWORD:-moodlepass}" --silent 2>/dev/null; then
-        echo "MySQL is ready!"
+    if mariadb-admin ping -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASSWORD" -P"$DB_PORT" --silent 2>/dev/null; then
+        echo "✓ MySQL is ready!"
         break
     fi
     attempt=$((attempt + 1))
-    sleep 2
+    if [ $((attempt % 10)) -eq 0 ]; then
+        echo "  ... still waiting ($attempt/$max_attempts)"
+    fi
+    sleep 1
 done
 
 if [ $attempt -eq $max_attempts ]; then
-    echo "MySQL connection timeout!"
-    exit 1
+    echo "⚠ MySQL connection timeout after $max_attempts attempts!"
+    echo "Continuing anyway - database may initialize later..."
 fi
 
 # Check if Moodle tables exist
-if ! mariadb -h"${DB_HOST:-mysql}" -u"${DB_USER:-moodle}" -p"${DB_PASSWORD:-moodlepass}" "${DB_NAME:-moodle}" -e "SHOW TABLES LIKE 'mdl_%';" 2>/dev/null | grep -q mdl_; then
-    echo "Initializing Moodle database..."
+echo "Checking if Moodle database is initialized..."
+if ! mariadb -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASSWORD" -P"$DB_PORT" "$DB_NAME" -e "SHOW TABLES LIKE 'mdl_%';" 2>/dev/null | grep -q mdl_; then
+    echo "Database is empty. Initializing Moodle..."
     cd /var/www/html
     php admin/cli/install_database.php \
         --adminuser=admin \
         --adminpass=Admin@123456 \
-        --adminemail=admin@example.com || echo "Database initialization attempted"
+        --adminemail=admin@example.com || echo "⚠ Database initialization attempted (may fail if DB not ready)"
+else
+    echo "✓ Moodle database already initialized"
 fi
 
 echo "Starting Apache..."
