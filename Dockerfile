@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions that Moodle actually needs
-# Includes PostgreSQL support for Render database
+# Includes PostgreSQL support for Render database (both pgsql and pdo_pgsql)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
     gd \
@@ -31,6 +31,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     pdo \
     pdo_mysql \
     pdo_pgsql \
+    pgsql \
     intl \
     xml \
     zip \
@@ -43,7 +44,13 @@ RUN echo "upload_max_filesize = 100M" >> /usr/local/etc/php/conf.d/moodle.ini &&
     echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/moodle.ini && \
     echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/moodle.ini && \
     echo "default_charset = 'UTF-8'" >> /usr/local/etc/php/conf.d/moodle.ini && \
-    echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/moodle.ini
+    echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/moodle.ini && \
+    echo "pgsql.allow_persistent = On" >> /usr/local/etc/php/conf.d/moodle.ini && \
+    echo "pgsql.max_persistent = -1" >> /usr/local/etc/php/conf.d/moodle.ini && \
+    echo "pgsql.max_links = -1" >> /usr/local/etc/php/conf.d/moodle.ini && \
+    echo "pgsql.auto_reset_persistent = Off" >> /usr/local/etc/php/conf.d/moodle.ini && \
+    echo "pgsql.log_notice = 0" >> /usr/local/etc/php/conf.d/moodle.ini && \
+    echo "pgsql.log_notice = 0" >> /usr/local/etc/php/conf.d/moodle.ini
 
 # Enable Apache modules
 RUN a2enmod rewrite && a2enmod headers
