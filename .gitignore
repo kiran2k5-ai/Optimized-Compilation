@@ -1,0 +1,110 @@
+# Moodle .gitignore - Files to exclude from git
+
+# ===== Local Development =====
+# Local test scripts and diagnostics
+tests_scripts/simple_db_test.php
+tests_scripts/db_connectivity_test.php
+start_mysql.bat
+start_mysql.ps1
+
+# Local configuration
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+.DS_Store
+
+# ===== Documentation (local dev versions) =====
+DATABASE_CONNECTION_FIX.md
+DATABASE_ERROR_SOLUTION.md
+QUICK_FIX_CHECKLIST.md
+
+# ===== History/Backup Files =====
+.history/
+*.bak
+*.backup
+
+# ===== System Files =====
+Thumbs.db
+.DS_Store
+*.tmp
+
+# ===== Moodle Specific =====
+# Cache and temp files (these are created at runtime)
+cache/
+temp/
+install.php.session
+
+# Error logs (will be created in production)
+moodledata/error.log
+moodledata/debug.log
+
+# ===== Node/NPM (if used) =====
+node_modules/
+package-lock.json
+npm-shrinkwrap.json
+
+# ===== Python (if used) =====
+__pycache__/
+*.pyc
+*.egg-info/
+.Python
+
+# ===== PHP =====
+vendor/
+composer.lock
+.phpunit.result.cache
+
+# ===== Build artifacts =====
+build/
+dist/
+out/
+
+# ===== Sensitive Files =====
+# Don't commit files with passwords or API keys
+config.local.php
+.env
+*.pem
+*.key
+*.crt
+
+# ===== Large Files =====
+# Database dumps shouldn't be in git
+*.sql
+*.sql.gz
+backups/
+
+# ===== Temporary =====
+*.log
+tmp/
+temp/
+
+# ===== OS-specific =====
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ===== Windows =====
+Thumbs.db
+.vs/
+*.lnk
+
+# ===== Docker (local development) =====
+docker-compose.override.yml
+
+# Keep these important files
+!Dockerfile
+!render.yaml
+!config.php
+!.gitignore

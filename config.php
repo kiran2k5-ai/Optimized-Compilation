@@ -9,17 +9,32 @@ $CFG = new stdClass();
 $is_docker = is_dir('/var/moodledata');
 
 // ===== DATABASE CONFIGURATION =====
-$CFG->dbtype    = 'mariadb';
-$CFG->dblibrary = 'native';
-
+// Support: PostgreSQL (Render), MariaDB (Local), PostgreSQL (External)
 if ($is_docker) {
-    // Docker environment
-    $CFG->dbhost    = 'mysql';
-    $CFG->dbname    = 'moodle';
-    $CFG->dbuser    = 'moodle';
-    $CFG->dbpass    = 'moodlepass';
+    // Docker environment - detect database type
+    if (!empty(getenv('DATABASE_URL'))) {
+        // Render PostgreSQL (auto-injected when linked)
+        $db_url = parse_url(getenv('DATABASE_URL'));
+        $CFG->dbtype    = 'pgsql';
+        $CFG->dblibrary = 'native';
+        $CFG->dbhost    = $db_url['host'];
+        $CFG->dbport    = $db_url['port'] ?? 5432;
+        $CFG->dbname    = trim($db_url['path'], '/');
+        $CFG->dbuser    = $db_url['user'];
+        $CFG->dbpass    = $db_url['pass'];
+    } else {
+        // Local docker-compose with MariaDB fallback
+        $CFG->dbtype    = 'mariadb';
+        $CFG->dblibrary = 'native';
+        $CFG->dbhost    = 'mysql';
+        $CFG->dbname    = 'moodle';
+        $CFG->dbuser    = 'moodle';
+        $CFG->dbpass    = 'moodlepass';
+    }
 } else {
-    // Local Windows environment
+    // Local Windows environment with MariaDB
+    $CFG->dbtype    = 'mariadb';
+    $CFG->dblibrary = 'native';
     $CFG->dbhost    = 'localhost';
     $CFG->dbname    = 'moodle';
     $CFG->dbuser    = 'root';
@@ -27,12 +42,24 @@ if ($is_docker) {
 }
 
 $CFG->prefix    = 'mdl_';
-$CFG->dboptions = array (
-  'dbpersist' => 0,
-  'dbport' => '',
-  'dbsocket' => '',
-  'dbcollation' => 'utf8mb4_general_ci',
-);
+
+// Database options - different settings for different databases
+if ($is_docker && !empty(getenv('DATABASE_URL'))) {
+    // PostgreSQL on Render - no collation needed
+    $CFG->dboptions = array (
+        'dbpersist' => 0,
+        'dbport' => '',
+        'dbsocket' => '',
+    );
+} else {
+    // MariaDB/MySQL - requires collation
+    $CFG->dboptions = array (
+        'dbpersist' => 0,
+        'dbport' => '',
+        'dbsocket' => '',
+        'dbcollation' => 'utf8mb4_general_ci',
+    );
+}
 
 // ===== SITE URL & PATHS =====
 if ($is_docker) {
@@ -58,12 +85,20 @@ $CFG->directorypermissions = 0777;
 
 // ===== TRUSTED HOSTS & PROXIES =====
 if ($is_docker) {
-    // Allow Docker deployment hosts
+    // Allow Docker/Render deployment hosts
     $CFG->trusteddomains = array();
     $CFG->trusteddomains[0] = 'localhost';
     $CFG->trusteddomains[1] = 'localhost:80';
     $CFG->trusteddomains[2] = 'localhost:443';
     $CFG->trusteddomains[3] = '127.0.0.1';
+    // Add Render domain - replace with your actual domain
+    $CFG->trusteddomains[4] = 'coderunner-academy.onrender.com';
+    $CFG->trusteddomains[5] = '*.onrender.com';
+    
+    // Trust X-Forwarded-For header from reverse proxy
+    $CFG->reverseproxy = true;
+    $CFG->reverseproxyheader = 'HTTP_X_FORWARDED_FOR';
+    $CFG->sslproxy = true;
 } else {
     // Local development
     $CFG->trusteddomains = array();

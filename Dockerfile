@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2-dev \
     libicu-dev \
     libonig-dev \
+    libpq-dev \
     mariadb-client \
     postgresql-client \
     git \
@@ -22,13 +23,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions that Moodle actually needs
-# Only extensions that exist in PHP 8.2 official image
+# Includes PostgreSQL support for Render database
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
     gd \
     mysqli \
     pdo \
     pdo_mysql \
+    pdo_pgsql \
     intl \
     xml \
     zip \
