@@ -69,9 +69,34 @@ if ($is_docker) {
     // For HTTP only (no reverse proxy SSL termination)
     $CFG->sslproxy = false;
 } else {
-    // Local development
-    $CFG->wwwroot   = 'http://localhost';
+    // Local development - Windows XAMPP
+    // CRITICAL: wwwroot must NOT end with /public
+    // The /public directory should be served by Apache via DocumentRoot
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    // Determine the correct base URL:
+    // If DocumentRoot is set to /moodle/public: wwwroot = http://localhost
+    // If DocumentRoot is set to /htdocs: wwwroot = http://localhost/moodle/public
+    // If DocumentRoot is set to /htdocs/moodle: wwwroot = http://localhost/public
+    
+    // Auto-detect based on SCRIPT_NAME
+    $scriptname = $_SERVER['SCRIPT_NAME'] ?? '';
+    if (strpos($scriptname, '/moodle/public/') !== false || strpos($scriptname, '\\moodle\\public\\') !== false) {
+        // Likely DocumentRoot is /htdocs, so include /moodle/public in wwwroot
+        $CFG->wwwroot = 'http://' . $host . '/moodle/public';
+    } else if (strpos($scriptname, '/public/') !== false) {
+        // Likely DocumentRoot is /moodle, so include /public in wwwroot
+        $CFG->wwwroot = 'http://' . $host . '/public';
+    } else {
+        // Likely DocumentRoot is /moodle/public itself, just use base
+        $CFG->wwwroot = 'http://' . $host;
+    }
 }
+
+// Set dirroot - this will be auto-computed by public/lib/setup.php
+// It should point to the public directory (NOT to moodle root)
+// The public/lib/setup.php will set: $CFG->dirroot = dirname(__DIR__);
+// where __DIR__ is /moodle/public/lib, so dirroot becomes /moodle/public (correct)
 
 // moodledata directory
 if ($is_docker) {

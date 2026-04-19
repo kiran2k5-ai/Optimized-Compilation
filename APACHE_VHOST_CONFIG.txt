@@ -1,0 +1,66 @@
+# Apache VirtualHost Configuration for Moodle on XAMPP
+# Place this file in: C:\xampp\apache\conf\extra\httpd-vhosts.conf
+
+# OR add these lines to the end of that file:
+# ==========================================
+
+<VirtualHost *:80>
+    ServerName localhost
+    ServerAlias moodle.local
+    
+    # DocumentRoot should point to the /public directory
+    DocumentRoot "E:/moodel_xampp/htdocs/moodle/public"
+    
+    <Directory "E:/moodel_xampp/htdocs/moodle/public">
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        # Enable mod_rewrite for Moodle
+        <IfModule mod_rewrite.c>
+            RewriteEngine on
+            RewriteBase /
+            
+            # Don't rewrite real files or directories
+            RewriteCond %{REQUEST_FILENAME} -d [OR]
+            RewriteCond %{REQUEST_FILENAME} -f [OR]
+            RewriteCond %{REQUEST_FILENAME} -l
+            RewriteRule ^.*$ - [NC,L]
+            
+            # Rewrite everything else to index.php
+            RewriteRule ^(.*)$ index.php [QSA,L]
+        </IfModule>
+    </Directory>
+    
+    # Also need access to parent directory for some Moodle files
+    <Directory "E:/moodel_xampp/htdocs/moodle">
+        Options FollowSymLinks
+        AllowOverride None
+    </Directory>
+    
+    # Error and access logs
+    ErrorLog "logs/moodle-error.log"
+    CustomLog "logs/moodle-access.log" combined
+    
+    # Performance tuning
+    <IfModule mod_headers.c>
+        Header set X-Content-Type-Options "nosniff"
+        Header set X-Frame-Options "SAMEORIGIN"
+        Header set X-XSS-Protection "1; mode=block"
+    </IfModule>
+    
+    # Compress content
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css text/javascript application/javascript application/xml
+    </IfModule>
+</VirtualHost>
+
+# ==========================================
+# INSTRUCTIONS:
+# 1. Edit: C:\xampp\apache\conf\extra\httpd-vhosts.conf
+# 2. Add the VirtualHost configuration above
+# 3. Also enable the vhosts module in: C:\xampp\apache\conf\httpd.conf
+#    Find the line: Include conf/extra/httpd-vhosts.conf
+#    Make sure it's NOT commented out (no # at start)
+# 4. Restart Apache from XAMPP Control Panel
+# 5. Access Moodle at: http://localhost or http://moodle.local
