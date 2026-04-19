@@ -1,4 +1,8 @@
-# Complete Moodle Project Documentation
+Error: database driver problem detected
+
+The site administrator should verify server configuration
+
+PHP has not been properly configured with the PGSQL extension so that it can communicate with PostgreSQL. Please check your php.ini file or recompile PHP.# Complete Moodle Project Documentation
 **Generated**: April 18, 2026
 **Project**: CodeRunner Academy (Moodle 4.0 + CodeRunner Plugin)
 **Location**: e:\moodel_xampp\htdocs\moodle
