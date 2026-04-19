@@ -63,10 +63,11 @@ if ($is_docker && !empty(getenv('DATABASE_URL'))) {
 
 // ===== SITE URL & PATHS =====
 if ($is_docker) {
-    // Docker deployment - detect from request
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    // Docker deployment - use HTTP only
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $CFG->wwwroot   = $protocol . '://' . $host;
+    $CFG->wwwroot   = 'http://' . $host;
+    // For HTTP only (no reverse proxy SSL termination)
+    $CFG->sslproxy = false;
 } else {
     // Local development
     $CFG->wwwroot   = 'http://localhost';
@@ -96,9 +97,10 @@ if ($is_docker) {
     $CFG->trusteddomains[5] = '*.onrender.com';
     
     // Trust X-Forwarded-For header from reverse proxy
-    $CFG->reverseproxy = true;
+    // Disabled for HTTP-only connections - set to true only if using HTTPS with reverse proxy
+    $CFG->reverseproxy = false;
     $CFG->reverseproxyheader = 'HTTP_X_FORWARDED_FOR';
-    $CFG->sslproxy = true;
+    $CFG->sslproxy = false;
 } else {
     // Local development
     $CFG->trusteddomains = array();
@@ -110,7 +112,7 @@ if ($is_docker) {
 // ===== SESSION CONFIGURATION =====
 $CFG->sessiontimeout = 7200; // 2 hours
 $CFG->sessioncookiedomain = '';
-$CFG->sessioncookieinsecure = $is_docker ? false : true; // Allow http on local
+$CFG->sessioncookieinsecure = true; // Allow http on local and HTTP-only deployments
 $CFG->sessioncookiesamesite = 'Lax';
 
 // ===== SECURITY SETTINGS =====
